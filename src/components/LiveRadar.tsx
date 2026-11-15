@@ -443,6 +443,13 @@ function TrafficCard({ t, now, onClose }: { t: Traffic; now: number; onClose: ()
         <Stat icon={Radio} label="Squawk" value={t.squawk ?? "—"} />
         <Stat icon={Plane} label={t.registration ? "Type · Reg" : "ICAO hex"} value={t.registration ? `${t.type ?? "?"} · ${t.registration}` : t.hex.toUpperCase()} />
       </div>
+      {(t.typeName || t.operator) && (
+        <p className="mt-3 text-xs text-slate-400">
+          {[t.typeName, t.operator && t.operator !== t.airline?.name ? t.operator : null, t.yearBuilt ? `built ${t.yearBuilt}` : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
       <PositionBadge position={{ basis: "adsb", ageMs: Math.max(0, now - t.updated), provider: t.provider }} className="mt-3 text-xs" />
       {t.callsign && /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(t.callsign) ? (
         <Link

@@ -8,7 +8,8 @@ const SOURCES: { label: string; links: { name: string; href: string; note?: stri
       { name: "adsb.lol", href: "https://adsb.lol", note: "ODbL" },
     ],
   },
-  { label: "Routes & airlines", links: [{ name: "VRS standing data", href: "https://github.com/vradarserver/standing-data" }] },
+  { label: "Routes, airlines & aircraft", links: [{ name: "VRS standing data", href: "https://github.com/vradarserver/standing-data" }] },
+  { label: "Weather", links: [{ name: "aviationweather.gov", href: "https://aviationweather.gov/data/api/" }] },
   {
     label: "Airports",
     links: [

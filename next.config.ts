@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // The open route database is read from disk at runtime (src/lib/free/routes.ts) — ship it with every route.
   outputFileTracingIncludes: {
-    "/**": ["src/data/routes.txt"],
+    "/**": ["src/data/routes.txt", "src/data/aircraft.txt"],
   },
   turbopack: {
     rules: {

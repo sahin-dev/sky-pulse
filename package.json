@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "data:routes": "node scripts/build-routes.mjs"
+    "data:routes": "node scripts/build-routes.mjs",
+    "data:standing": "node scripts/build-routes.mjs",
+    "data:timezones": "node scripts/fill-timezones.mjs"
   },
   "dependencies": {
     "@react-leaflet/core": "^3.0.0",
@@ -28,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "geo-tz": "^8.1.11",
     "tailwindcss": "4.3.3",
     "typescript": "^5"
   }

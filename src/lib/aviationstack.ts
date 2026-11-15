@@ -2,6 +2,7 @@ import "server-only";
 import { cacheLife } from "next/cache";
 import { airportByIata } from "./airports";
 import { mockFlights } from "./mock";
+import { describeAircraft } from "./reference/aircraft";
 import { dataMode } from "./mode";
 import { parseAirportTime } from "./time";
 import type { DataMode, Endpoint, Flight, FlightQuery, FlightResult, RawEndpoint, RawFlight, RawResponse } from "./types";
@@ -156,7 +157,7 @@ export function normalizeFlight(r: RawFlight): Flight {
     // codeshare fields arrive lower-cased (e.g. "kuwait airways", "ku412")
     codeshare: cs ? { airline: titleCase(cs.airline_name ?? ""), flight: (cs.flight_iata ?? "").toUpperCase() } : null,
     aircraft: r.aircraft
-      ? { registration: r.aircraft.registration, type: r.aircraft.iata ?? r.aircraft.icao, icao24: r.aircraft.icao24 }
+      ? describeAircraft({ hex: r.aircraft.icao24, registration: r.aircraft.registration, type: r.aircraft.icao ?? r.aircraft.iata })
       : null,
     // ADS-B broadcasts the operating flight's ICAO callsign; for a codeshare that's the codeshared block.
     callsign: ((cs ? cs.flight_icao : r.flight.icao) ?? "").toUpperCase() || null,

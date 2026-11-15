@@ -3,6 +3,7 @@ import { airlineByIcao, airlineFromCallsign, airlineIcaoCodes, type AirportRecor
 import { bearing, distanceKm, type LatLon } from "../geo";
 import { aircraftFor, aircraftInBox, fuse, stateToLive, trackFor } from "../positions";
 import { adsblolPoint } from "../positions/adsblol";
+import { describeAircraft } from "../reference/aircraft";
 import { toAirportWallClock } from "../time";
 import type { AircraftState, AreaResult, BBox, Endpoint, Flight, FlightQuery, FlightResult, TimePoint, TrackPoint, Traffic } from "../types";
 import { airportForCode, callsignsFor, routeCodes } from "./routes";
@@ -164,7 +165,7 @@ function baseFlight(callsign: string, s: AircraftState | null, leg: Leg | null, 
       ? { name: airline.name, iata: airline.iata, icao: airline.icao }
       : { name: airlineByIcao(prefix)?.name ?? s?.originCountry ?? "Unknown operator", iata: "", icao: prefix },
     codeshare: null,
-    aircraft: s ? { registration: s.registration, type: s.type, icao24: s.hex.toUpperCase() } : null,
+    aircraft: s ? describeAircraft({ hex: s.hex, registration: s.registration, type: s.type }) : null,
     callsign,
     live: s ? stateToLive(s) : null,
     departure: endpoint(leg?.dep ?? null),

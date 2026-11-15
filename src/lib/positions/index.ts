@@ -1,5 +1,6 @@
 import "server-only";
 import { airlineFromCallsign } from "../airports";
+import { describeAircraft } from "../reference/aircraft";
 import { distanceKm } from "../geo";
 import type { AircraftState, BBox, Flight, LiveData, PositionsMeta, TrackPoint, Traffic } from "../types";
 import { ADSBLOL_MAX_RADIUS_NM, adsblolByCallsign, adsblolByHex, adsblolPoint } from "./adsblol";
@@ -137,11 +138,11 @@ export function applyState(f: Flight, s: AircraftState): Flight {
   return {
     ...f,
     live: fresher(f.live, stateToLive(s)),
-    aircraft: {
+    aircraft: describeAircraft({
+      hex: f.aircraft?.icao24 ?? s.hex,
       registration: f.aircraft?.registration ?? s.registration,
       type: f.aircraft?.type ?? s.type,
-      icao24: f.aircraft?.icao24 ?? s.hex.toUpperCase(),
-    },
+    }),
   };
 }
 
@@ -171,8 +172,14 @@ export function fuse(flights: Flight[], states: AircraftState[]): { flights: Fli
     .map((s) => {
       const airline = airlineFromCallsign(s.callsign);
       const m = /^[A-Z]{3}(\d{1,4})$/.exec(normCs(s.callsign));
+      const info = describeAircraft({ hex: s.hex, registration: s.registration, type: s.type });
       return {
         ...s,
+        registration: info.registration,
+        type: info.type,
+        typeName: info.typeName,
+        operator: info.operator,
+        yearBuilt: info.yearBuilt,
         airline,
         flightGuess: airline?.iata && m ? `${airline.iata}${Number(m[1])}` : null,
       };

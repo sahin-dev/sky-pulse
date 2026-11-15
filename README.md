@@ -78,6 +78,14 @@ permanently, set `FLIGHT_DATA=free`.
 
 Everything inferred is marked in the UI: an "inferred route" notice, plus *observed* and *estimated* labels.
 
+## Airport weather
+
+Flight pages show the current **METAR** observation and **TAF** forecast for the departure and arrival airports.
+They come from the [Aviation Weather Center data API](https://aviationweather.gov/data/api/) (US government, public
+domain, no key) and are cached for 10 minutes. The panel decodes the flight category (VFR, MVFR, IFR, LIFR), wind
+with a direction arrow, visibility in km, cloud layers, pressure and present weather ("-RA BR" becomes "Light rain,
+mist"). The raw report is shown too (`src/lib/weather.ts`, `src/components/WeatherPanel.tsx`).
+
 ## Accurate positions: ADS-B fusion
 
 aviationstack has live positions for only a few percent of flights. Measured on this project: 4 of 91 airborne flights.
@@ -119,10 +127,18 @@ How it fits together (`src/lib/positions/`):
 - `src/data/airlines.json`: ICAO → IATA and name. From the same standing data (maintained), with OpenFlights as a
   fallback for designators it lacks.
 
-Refresh both with:
+- `src/data/aircraft-types.json`: ICAO type designator → full name, engines and wake category (e.g. `B77L` →
+  Boeing 777-200LR). From standing data.
+- `src/data/aircraft.txt`: aircraft registry, ICAO 24-bit address → registration, type, operator and year built. It
+  fills gaps in what ADS-B and aviationstack report. From standing data, about 17,000 aircraft.
+- Airport time zones: OurAirports has none, so missing ones are derived offline from coordinates with
+  [`geo-tz`](https://github.com/evansiroky/node-geo-tz). 9,151 of 9,152 airports have one.
+
+Refresh the standing-data files (routes, airlines, aircraft types, aircraft registry) with:
 
 ```bash
-npm run data:routes
+npm run data:standing   # same as npm run data:routes
+npm run data:timezones  # after rebuilding airports.json
 ```
 
 This downloads the latest standing data. Callsign routes change with airline schedule seasons, so refresh every few

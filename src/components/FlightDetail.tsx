@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   Briefcase,
   CalendarDays,
+  CloudSun,
   Check,
   DoorOpen,
   Gauge,
@@ -28,7 +29,7 @@ import clsx from "clsx";
 import { aircraftPosition, coordsOf, distanceKm, flightProgress, flightTimes } from "@/lib/geo";
 import { flightHref } from "@/lib/search";
 import { clockOf, dayOf, formatAgo, formatDuration } from "@/lib/time";
-import type { DataMode, Endpoint, Flight, LiveData, TrackPoint } from "@/lib/types";
+import type { AirportWeather, DataMode, Endpoint, Flight, LiveData, TrackPoint } from "@/lib/types";
 import { useNow } from "@/lib/useNow";
 import { AirlineBadge } from "./AirlineBadge";
 import { AnimatedNumber } from "./AnimatedNumber";
@@ -36,6 +37,7 @@ import { RouteMap } from "./map";
 import { ModeBanner } from "./Notices";
 import { PositionBadge } from "./PositionBadge";
 import { ProgressTrack } from "./ProgressTrack";
+import { WeatherPanel } from "./WeatherPanel";
 import { StatusBadge, delayTone } from "./StatusBadge";
 
 const ease = [0.2, 0.7, 0.2, 1] as const;
@@ -51,6 +53,7 @@ const LIVE_POLL_MS = 15_000;
 export function FlightDetail({
   flight: serverFlight,
   track,
+  weather,
   others,
   now: initialNow,
   mode,
@@ -58,6 +61,7 @@ export function FlightDetail({
 }: {
   flight: Flight;
   track: TrackPoint[] | null;
+  weather?: { departure: AirportWeather | null; arrival: AirportWeather | null } | null;
   others: Flight[];
   now: number;
   mode: DataMode;
@@ -258,12 +262,36 @@ export function FlightDetail({
         <TelemetryCard flight={flight} now={now} delay={0.3} />
       </div>
 
+      {weather && (weather.departure || weather.arrival) && (
+        <motion.section {...rise(0.32)} className="glass rounded-3xl p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle icon={CloudSun}>Airport weather</CardTitle>
+            <span className="text-xs text-slate-500">METAR / TAF · aviationweather.gov</span>
+          </div>
+          <div className="mt-4">
+            <WeatherPanel
+              departure={{ iata: flight.departure.iata, city: flight.departure.city, weather: weather.departure }}
+              arrival={{ iata: flight.arrival.iata, city: flight.arrival.city, weather: weather.arrival }}
+              now={now}
+            />
+          </div>
+        </motion.section>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         <motion.section {...rise(0.34)} className="glass rounded-3xl p-6">
           <CardTitle icon={Plane}>Aircraft</CardTitle>
           <dl className="mt-4 space-y-3">
-            <Row label="Type" value={flight.aircraft?.type} mono />
+            <Row label="Type" value={flight.aircraft?.typeName ?? flight.aircraft?.type} />
+            {flight.aircraft?.typeName && flight.aircraft.type && <Row label="Type code" value={flight.aircraft.type} mono />}
             <Row label="Registration" value={flight.aircraft?.registration} mono />
+            {flight.aircraft?.operator && <Row label="Operator" value={flight.aircraft.operator} />}
+            {flight.aircraft?.yearBuilt && (
+              <Row
+                label="Built"
+                value={`${flight.aircraft.yearBuilt} · ${Math.max(0, new Date(now).getUTCFullYear() - flight.aircraft.yearBuilt)} years old`}
+              />
+            )}
             <Row label="ICAO 24-bit" value={flight.aircraft?.icao24?.toUpperCase()} mono />
             <Row label="Flight ICAO" value={flight.icao} mono />
           </dl>

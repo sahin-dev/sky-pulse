@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FlightDetail } from "@/components/FlightDetail";
 import { EmptyPanel, ErrorPanel } from "@/components/Notices";
+import { airportByIata } from "@/lib/airports";
 import { getFlightPage } from "@/lib/flights";
+import { airportWeather } from "@/lib/weather";
 import { attempt, requestNow } from "@/lib/server-utils";
 
 export async function generateMetadata(props: PageProps<"/flight/[code]">): Promise<Metadata> {
@@ -59,7 +61,15 @@ async function Detail({
       />
     );
   }
-  return <FlightDetail flight={flight} track={track} others={others} now={now} mode={mode} notice={notice} />;
+  // Airport weather (METAR/TAF): free, public-domain data; a failure just hides the section.
+  const icao = (e: { icao: string; iata: string }) => e.icao || airportByIata(e.iata)?.icao || "";
+  const [depIcao, arrIcao] = [icao(flight.departure), icao(flight.arrival)];
+  const wx = await attempt(() => airportWeather([depIcao, arrIcao]));
+  const weather = wx.ok ? { departure: wx.data[depIcao] ?? null, arrival: wx.data[arrIcao] ?? null } : null;
+
+  return (
+    <FlightDetail flight={flight} track={track} others={others} now={now} mode={mode} notice={notice} weather={weather} />
+  );
 }
 
 function DetailSkeleton() {

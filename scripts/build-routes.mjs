@@ -101,3 +101,62 @@ for (const line of fs.readFileSync(airlinesCsv, "utf8").split(/\r?\n/)) {
 }
 fs.writeFileSync(airlinesOut, JSON.stringify(airlines));
 console.log(`airlines: ${fromStanding} from standing data, ${Object.keys(airlines).length} total → ${path.relative(root, airlinesOut)}`);
+
+const readCsvRows = (file) =>
+  fs
+    .readFileSync(file, "utf8")
+    .replace(/^﻿/, "")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .slice(1)
+    .map(parseCsvLine);
+
+/* Aircraft types: ICAO designator → [manufacturer, model, engines, engine type (J/T/P/…), wake (L/M/H/J)].
+   A designator has many alias rows ("777-200LR", "777-200LR BBJ", "777-F"). Pick the most
+   "central" name — sharing the longest prefixes with the other aliases — among active rows,
+   avoiding marketing/VIP variants; ties go to the shorter name. */
+const byDesignator = new Map();
+for (const file of csvFiles(path.join(src, "model-type", "schema-01"))) {
+  for (const [icao, manufacturer, model, engines, engineType, , , wake, active] of readCsvRows(file)) {
+    if (!/^[A-Z0-9]{2,4}$/.test(icao ?? "") || !model) continue;
+    const rows = byDesignator.get(icao) ?? [];
+    rows.push({ manufacturer, model: model.trim(), engines, engineType, wake, active: active === "1" });
+    byDesignator.set(icao, rows);
+  }
+}
+const commonPrefix = (a, b) => {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i].toLowerCase() === b[i].toLowerCase()) i++;
+  return i;
+};
+const types = {};
+for (const [icao, rows] of byDesignator) {
+  const pool = rows.some((r) => r.active) ? rows.filter((r) => r.active) : rows;
+  const scored = pool.map((r) => ({
+    r,
+    score:
+      pool.reduce((sum, o) => (o === r ? sum : sum + commonPrefix(r.model, o.model)), 0) -
+      (/\b(BBJ|VIP|Prestige|ACJ)\b|\(|^[A-Z]+ [A-Z]-/i.test(r.model) ? 100 : 0),
+  }));
+  scored.sort((a, b) => b.score - a.score || a.r.model.length - b.r.model.length);
+  const best = scored[0].r;
+  types[icao] = [best.manufacturer, best.model, Number(best.engines) || null, best.engineType || null, best.wake || null];
+}
+const typesOut = path.join(root, "src/data/aircraft-types.json");
+fs.writeFileSync(typesOut, JSON.stringify(types));
+console.log(`aircraft types: ${Object.keys(types).length} → ${path.relative(root, typesOut)}`);
+
+/* Aircraft registry: one sorted line per ICAO 24-bit address, "hex reg|type|operator|year",
+   read at runtime with a binary search (like routes.txt). */
+const aircraft = new Map();
+for (const file of csvFiles(path.join(src, "aircraft", "schema-01"))) {
+  for (const [icao24, reg, modelIcao, , , , , operator, , , year] of readCsvRows(file)) {
+    if (!/^[0-9A-F]{6}$/i.test(icao24 ?? "")) continue;
+    const clean = (v) => (v ?? "").replace(/[|\n\r]/g, " ").trim();
+    aircraft.set(icao24.toLowerCase(), [clean(reg), clean(modelIcao), clean(operator), /^\d{4}$/.test(year ?? "") ? year : ""].join("|"));
+  }
+}
+const aircraftOut = path.join(root, "src/data/aircraft.txt");
+const aircraftLines = [...aircraft.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([h, v]) => `${h} ${v}`);
+fs.writeFileSync(aircraftOut, aircraftLines.join("\n") + "\n");
+console.log(`aircraft: ${aircraftLines.length} → ${path.relative(root, aircraftOut)} (${(fs.statSync(aircraftOut).size / 1e6).toFixed(1)} MB)`);

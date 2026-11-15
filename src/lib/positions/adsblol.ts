@@ -36,7 +36,8 @@ function toState(a: Ac, now: number): AircraftState | null {
   const rate = a.baro_rate ?? a.geom_rate;
   return {
     hex: a.hex.replace(/^~/, "").toLowerCase(),
-    callsign: a.flight?.trim() || null,
+    // adsb.lol uses "@@@@@@@@" as a placeholder when no callsign was received.
+    callsign: a.flight?.trim().replace(/^@+$/, "") || null,
     lat: a.lat,
     lon: a.lon,
     altitude: ground ? 0 : altFt != null ? altFt * 0.3048 : null,

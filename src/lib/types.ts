@@ -150,7 +150,15 @@ export interface Flight {
   icao: string;
   airline: { name: string; iata: string; icao: string };
   codeshare: { airline: string; flight: string } | null;
-  aircraft: { registration: string | null; type: string | null; icao24: string | null } | null;
+  aircraft: {
+    registration: string | null;
+    type: string | null;
+    icao24: string | null;
+    /** e.g. "Boeing 777-200LR" (reference data) */
+    typeName?: string | null;
+    operator?: string | null;
+    yearBuilt?: number | null;
+  } | null;
   /** ICAO callsign of the *operating* flight (what ADS-B broadcasts), e.g. "KAC412". */
   callsign: string | null;
   live: LiveData | null;
@@ -209,6 +217,10 @@ export interface Traffic extends AircraftState {
   airline: { name: string; iata: string; icao: string } | null;
   /** IATA flight number guessed from the callsign (e.g. BAW117 → BA117); may not exist. */
   flightGuess: string | null;
+  /** e.g. "Airbus A-320neo" (reference data) */
+  typeName?: string | null;
+  operator?: string | null;
+  yearBuilt?: number | null;
 }
 
 export interface PositionsMeta {
@@ -217,6 +229,37 @@ export interface PositionsMeta {
   warning: string | null;
   /** OpenSky anonymous/registered credits left today, when known. */
   creditsRemaining: number | null;
+}
+
+/** Decoded METAR (airport weather observation). */
+export interface Metar {
+  station: string;
+  /** Observation time (ms epoch). */
+  observed: number;
+  /** °C */
+  temperature: number | null;
+  dewpoint: number | null;
+  /** Degrees the wind blows FROM, or "variable". */
+  windDirection: number | "variable" | null;
+  /** knots */
+  windSpeed: number | null;
+  windGust: number | null;
+  visibilityKm: number | null;
+  /** True when visibility was reported as "at least" (e.g. 10+ miles). */
+  visibilityAtLeast: boolean;
+  pressureHpa: number | null;
+  /** FAA flight category: VFR (good) › MVFR › IFR › LIFR (poor). */
+  category: "VFR" | "MVFR" | "IFR" | "LIFR" | null;
+  /** Cloud layers, base in feet above the airport. */
+  clouds: { cover: string; baseFt: number | null }[];
+  /** Present weather, e.g. "HZ" (haze), "-RA" (light rain). */
+  weather: string | null;
+  raw: string;
+}
+
+export interface AirportWeather {
+  metar: Metar | null;
+  taf: { raw: string; issued: number; validFrom: number; validTo: number } | null;
 }
 
 /** Point on an actual flown track: [lat, lon, altitude m | null, time ms]. */
